@@ -94,6 +94,52 @@ impl LexError {
     }
 }
 
+/// 字句解析器
+fn lex (input :&str)->Result<Vec<Token>,LexError>{
+    // 解析結果を保存するベクタ
+    let mut tokens = Vec::new();
+
+    // 入力
+    let input = input.as_bytes();
+
+    // 位置を管理する値
+    let mut pos = 0;
+
+    // サブレキサを呼んだあとposを更新するマクロ
+    macro_rules! lex_a_token {
+        ($lexer:expr) => {
+            {
+                let(tok,p)=$lexer?;
+                tokens.push(tok);
+                pos=p;
+            }
+        };
+    }
+
+    while pos < input.len() {
+        // ここでそれぞれの関数にinputとposを渡す
+        match input[pos]{
+            b'0'...b'9' => lex_a_token!(lex_number(input, pos)),
+            b'+' => lex_a_token!(lex_plus(input, pos)),
+            b'-' => lex_a_token!(lex_minus(input, pos)),
+            b'*' => lex_a_token!(lex_asterisk(input, pos)),
+            b'/' => lex_a_token!(lex_slash(input, pos)),
+            b'(' => lex_a_token!(lex_lparen(input, pos)),
+            b')' => lex_a_token!(lex_rparen(input, pos)),
+
+            // 空白を扱う
+            b' ' | b'\n' | b'\t' => {
+                let((),p) = skip_spaces(input, pos)?;
+                pos = p;
+            }
+
+            // それ以外はエラー
+            b => return Err(LexError::invalid_char(b as char, Loc(pos, pos + 1))),
+        }
+    }
+    Ok(tokens)
+}
+
 fn main() {
     println!("Hello, world!");
 }
