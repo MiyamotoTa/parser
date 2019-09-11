@@ -43,7 +43,37 @@ enum TokenKind {
 }
 
 // TokenKindにアノテーションをつけたものをTokenとして定義しておく
-type Token = Annot<TokenKind>
+type Token = Annot<TokenKind>;
+
+impl Token {
+    fn number(n: u64, loc: Loc) -> Self {
+        Self::new(TokenKind::Number(n), loc)
+    }
+
+    fn plus(loc: Loc) -> Self {
+        Self::new(TokenKind::Plus, loc)
+    }
+
+    fn minus(loc: Loc) -> Self {
+        Self::new(TokenKind::Minus, loc)
+    }
+
+    fn asterisk(loc: Loc) -> Self {
+        Self::new(TokenKind::Asterisk, loc)
+    }
+
+    fn slash(loc: Loc) -> Self {
+        Self::new(TokenKind::Slash, loc)
+    }
+
+    fn lparen(loc: Loc) -> Self {
+        Self::new(TokenKind::LParen, loc)
+    }
+
+    fn rparen(loc: Loc) -> Self {
+        Self::new(TokenKind::RParen, loc)
+    }
+}
 
 fn main() {
     println!("Hello, world!");
