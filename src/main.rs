@@ -24,6 +24,27 @@ impl<T> Annot<T> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum TokenKind {
+    /// [0-9][0-9]*
+    Number(u64),
+    /// +
+    Plus,
+    /// -
+    Minus,
+    /// *
+    Asterisk,
+    /// /
+    Slash,
+    /// (
+    LParen,
+    /// )
+    RParen,
+}
+
+// TokenKindにアノテーションをつけたものをTokenとして定義しておく
+type Token = Annot<TokenKind>
+
 fn main() {
     println!("Hello, world!");
 }
