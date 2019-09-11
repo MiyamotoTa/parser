@@ -11,6 +11,19 @@ impl Loc {
     }
 }
 
+/// アノテーション。値に様々なデータを持たせたもの。ここではLocを持たせている。
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct Annot<T> {
+    value: T,
+    loc: Loc,
+}
+
+impl<T> Annot<T> {
+    fn new(value: T, loc: Loc) -> Self {
+        Self { value, loc }
+    }
+}
+
 fn main() {
     println!("Hello, world!");
 }
