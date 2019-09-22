@@ -140,6 +140,82 @@ fn lex (input :&str)->Result<Vec<Token>,LexError>{
     Ok(tokens)
 }
 
+/// posのバイトが期待するものであれば1バイト消費してposを1進める
+fn consume_byte(input: &[u8], pos:usize, b:u8)->Result<(u8,usize),LexError>{
+    // posが入力サイズ以上なら入力が終わっている
+    // 1バイト期待しているのに終わっているのでエラー
+    if input.len()<=pos{
+        return Err(LexError::eof(Loc(pos,pos)));
+    }
+
+    // 入力が期待するものでなければエラー
+    if input[pos]!=b{
+        return Err(LexError::invalid_char(
+            input[pos] as char,
+            Loc(pos, pos+1),
+        ));
+    }
+    Ok((b, pos+1))
+}
+
+fn lex_plus(input:&[u8], start:usize)->Result<(Token, usize), LexError>{
+    // Result::mapを使うことで結果が正常だった場合の処理を簡潔に書ける
+    // これはこのコードと等価
+    // ```
+    // match consume_byte(input, start, b'+') {
+    //     Ok((_, end)) => (Token::plus(Loc(start, end)), end),
+    //     Err(err) => Err(err),
+    // }
+    consume_byte(input, start, b'+').map(|(_, end)| (Token::plus(Loc(start, end)), end))
+}
+
+fn lex_minus(input: &[u8], start: usize) ->Result<(Token,usize), LexError>{
+    consume_byte(input, start, b'-').map(|(_,end)|(Token::minus(Loc(start, end)),end))
+}
+
+fn lex_asterisk(input: &[u8], start: usize) ->Result<(Token,usize), LexError>{
+    consume_byte(input, start, b'*').map(|(_,end)|(Token::asterisk(Loc(start, end)),end))
+}
+
+fn lex_slash(input: &[u8], start: usize) ->Result<(Token,usize), LexError>{
+    consume_byte(input, start, b'/').map(|(_,end)|(Token::slash(Loc(start, end)),end))
+}
+
+fn lex_lparen(input: &[u8], start: usize) ->Result<(Token,usize), LexError>{
+    consume_byte(input, start, b'(').map(|(_,end)|(Token::lparen(Loc(start, end)),end))
+}
+
+fn lex_rparen(input: &[u8], start: usize) ->Result<(Token,usize), LexError>{
+    consume_byte(input, start, b')').map(|(_,end)|(Token::rparen(Loc(start, end)),end))
+}
+
+fn lex_number(input: &[u8], mut pos: usize) -> (Token, usize) {
+    use std::str::from_utf8;
+
+    let start = pos;
+    // 入力が続く限り位置を進める
+    while pos < input.len() && b"1234567890".contains(&input[pos]) {
+        pos += 1;
+    }
+    // 数字の列を数値に変換する
+    let n = from_utf8(&input[start..pos])
+        // start..posの構成からfrom_utf8は常に成功するためunwrapしても安全
+        .unwrap()
+        .parse()
+        // 同じく構成からparseは常に成功する
+        .unwrap();
+    (Token::number(n, Loc(start, pos)), pos)
+}
+
+fn skip_spaces(input: &[u8], mut pos: usize)->((), usize) {
+    // 入力に空白文字が続く限り位置を進める
+    while pos < input.len() && b"\n\t".contains(&input[pos]){
+        pos += 1;
+    }
+    //そのまま空白を無視する
+    ((),pos)
+}
+
 fn main() {
     println!("Hello, world!");
 }
