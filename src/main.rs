@@ -95,7 +95,7 @@ impl LexError {
 }
 
 /// 字句解析器
-fn lex (input :&str)->Result<Vec<Token>,LexError>{
+fn lex (input: &str) -> Result<Vec<Token>, LexError> {
     // 解析結果を保存するベクタ
     let mut tokens = Vec::new();
 
@@ -107,13 +107,11 @@ fn lex (input :&str)->Result<Vec<Token>,LexError>{
 
     // サブレキサを呼んだあとposを更新するマクロ
     macro_rules! lex_a_token {
-        ($lexer:expr) => {
-            {
-                let(tok,p)=$lexer?;
-                tokens.push(tok);
-                pos=p;
-            }
-        };
+        ($lexer:expr) => {{
+            let (tok, p) = $lexer?;
+            tokens.push(tok);
+            pos = p;
+        }};
     }
 
     while pos < input.len() {
@@ -193,10 +191,8 @@ fn lex_number(input: &[u8], mut pos: usize) -> (Token, usize) {
     use std::str::from_utf8;
 
     let start = pos;
-    // 入力が続く限り位置を進める
-    while pos < input.len() && b"1234567890".contains(&input[pos]) {
-        pos += 1;
-    }
+    // recognize_many を使って数値を読み込む
+    let end = recognize_many(input, start, |b| b"1234567890".contains(&b));
     // 数字の列を数値に変換する
     let n = from_utf8(&input[start..pos])
         // start..posの構成からfrom_utf8は常に成功するためunwrapしても安全
@@ -207,15 +203,36 @@ fn lex_number(input: &[u8], mut pos: usize) -> (Token, usize) {
     (Token::number(n, Loc(start, pos)), pos)
 }
 
-fn skip_spaces(input: &[u8], mut pos: usize)->((), usize) {
-    // 入力に空白文字が続く限り位置を進める
-    while pos < input.len() && b"\n\t".contains(&input[pos]){
+fn skip_spaces(input: &[u8], mut pos: usize)-> Result<((), usize), LexError> {
+    // recognize_many を使って空白を飛ばす
+    let pos = recognize_many(input, pos, |b| b" \n\t".contains(&b));
+    Ok(((),pos))
+}
+
+fn recognize_many(input: &[u8], mut pos: usize, mut f: impl FnMut(u8)-> bool) -> usize {
+    while pos < input.len() && f(input[pos]) {
         pos += 1;
     }
-    //そのまま空白を無視する
-    ((),pos)
+    pos
 }
 
 fn main() {
     println!("Hello, world!");
+}
+
+#[test]
+fn test_lexer() {
+    assert_eq!(
+        lex("1 + 2 * 3 - -10"),
+        Ok(vec![
+            Token::number(1, Loc(0, 1)),
+            Token::plus(Loc(2, 3)),
+            Token::number(2, Loc(4, 5)),
+            Token::asterisk(Loc(6, 7)),
+            Token::number(3, Loc(8, 9)),
+            Token::minus(Loc(10, 11)),
+            Token::minus(Loc(12, 13)),
+            Token::number(10, Loc(13, 15)),
+        ])
+    )
 }
